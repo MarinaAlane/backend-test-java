@@ -50,6 +50,10 @@ public class EmpresaController {
     return count != null && count > 0;
   }
 
+  private String formatarCnpj(String cnpj) {
+    return cnpj.replaceAll("(\\d{2})(\\d{3})(\\d{3})(\\d{4})(\\d{2})", "$1.$2.$3/$4-$5");
+  }
+
   @Schema(name = "EmpresaDTO", description = "Dados da empresa")
   public static class EmpresaDTO {
     @Schema(description = "Nome da empresa", example = "JAVA TESTE Ltda")
@@ -85,7 +89,9 @@ public class EmpresaController {
 
       for (Map<String, Object> empresa : empresas) {
         String cnpj = (String) empresa.get("cnpj");
-        empresa.put("cnpj", cnpj.replaceAll("(\\d{2})(\\d{3})(\\d{3})(\\d{4})(\\d{2})", "$1.$2.$3/$4-$5"));
+        String cnpjFormatado = formatarCnpj((String) empresa.get("cnpj"));
+
+        empresa.put(cnpj, cnpjFormatado);
       }
 
       return ResponseEntity.ok(empresas);
@@ -117,7 +123,6 @@ public class EmpresaController {
     try {
       cnpjLimpo = cnpj.replaceAll("[^0-9]", "");
 
-      // TODO: Fazer desse bloco uma função auxiliar
     } catch (NullPointerException e) {
       logger.warn("CNPJ fornecido é nulo ou inválido para limpeza.");
       Map<String, Object> errorBody = new HashMap<>();
@@ -142,9 +147,7 @@ public class EmpresaController {
 
       Object empresa = empresaEncontrada.get("cnpj");
 
-      // TODO: FAZER DESSE BLOCO FUNÇÃO AUXILIAR
-      String cnpjFormatado = ((String) empresa).replaceAll("(\\d{2})(\\d{3})(\\d{3})(\\d{4})(\\d{2})",
-          "$1.$2.$3/$4-$5");
+      String cnpjFormatado = formatarCnpj((String) empresa);
 
       empresaEncontrada.put("cnpj", cnpjFormatado);
 
