@@ -167,10 +167,11 @@ public class EmpresaController {
       @RequestBody EmpresaDTO empresa) {
     Map<String, Object> responseBody = new HashMap<>();
     try {
+      
       String sql = "UPDATE empresas SET nome = ?, endereco = ? WHERE cnpj = ?";
       int rows = jdbcTemplate.update(sql, empresa.nome, empresa.endereco, cnpj);
 
-      if (rows == 0) {
+      if (!empresaExiste(cnpj)) {
         responseBody.put("erro", "Nenhuma empresa encontrada com o CNPJ fornecido.");
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(responseBody);
       }
