@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,6 +23,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
 @RestController
 @RequestMapping("/empresas")
 @Tag(name = "Empresas", description = "Endpoints para cadastro e consulta de empresas")
@@ -28,19 +37,33 @@ public class EmpresaController {
 
   private final JdbcTemplate jdbcTemplate;
 
+  private static final Logger logger = LoggerFactory.getLogger(EmpresaController.class);
+
   public EmpresaController(JdbcTemplate jdbcTemplate) {
     this.jdbcTemplate = jdbcTemplate;
+  }
+
+  private boolean empresaExiste(String cnpj) {
+    String sql = "SELECT COUNT(*) FROM empresas WHERE cnpj = ?";
+
+    Integer count = jdbcTemplate.queryForObject(sql, Integer.class, cnpj);
+    return count != null && count > 0;
   }
 
   @Schema(name = "EmpresaDTO", description = "Dados da empresa")
   public static class EmpresaDTO {
     @Schema(description = "Nome da empresa", example = "JAVA TESTE Ltda")
+    @Size(max = 100, message = "O nome pode ter no máximo 100 caracteres.")
+    @NotBlank(message = "O nome é obrigatório.")
     public String nome;
 
     @Schema(description = "CNPJ da empresa", example = "12345678000112")
+    @Size(min = 14, max = 14, message = "O CNPJ deve ter exatamente 14 dígitos.")
+    @NotBlank(message = "O CNPJ é obrigatório.")
     public String cnpj;
 
     @Schema(description = "Endereço da empresa", example = "Rua do teste, 123")
+    @Size(max = 200, message = "O endereço pode ter no máximo 200 caracteres.")
     public String endereco;
   }
 
@@ -102,41 +125,29 @@ public class EmpresaController {
           """)))
   })
   @PostMapping(consumes = "application/json", produces = "application/json")
-  public Map<String, Object> cadastrarEmpresa(@RequestBody EmpresaDTO empresa) {
-    Map<String, Object> response = new HashMap<>();
-
-    if (empresa.nome == null || empresa.nome.trim().isEmpty()) {
-      response.put("erro", "O nome é obrigatório.");
-      return response;
-    }
-    if (empresa.nome.length() > 100) {
-      response.put("erro", "O nome pode ter no máximo 100 caracteres.");
-      return response;
-    }
-
-    if (empresa.cnpj == null || empresa.cnpj.trim().isEmpty()) {
-      response.put("erro", "O CNPJ é obrigatório.");
-      return response;
-    }
-
+  public ResponseEntity<Map<String, Object>> cadastrarEmpresa(@Valid @RequestBody EmpresaDTO empresa) {
+    Map<String, Object> responseBody = new HashMap<>();
     String cnpjLimpo = empresa.cnpj.replaceAll("[^0-9]", "");
 
-    if (cnpjLimpo.length() < 14 || cnpjLimpo.length() > 14) {
-      response.put("erro", "O CNPJ deve ter exatamente 14 dígitos numéricos.");
-      return response;
+    try {
+      if (empresaExiste(cnpjLimpo)) {
+        logger.warn("CNPJ {} já cadastrado", cnpjLimpo);
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseBody);
+      }
+
+      String sql = "INSERT INTO empresas (nome, cnpj, endereco) VALUES (?, ?, ?)";
+      int rows = jdbcTemplate.update(sql, empresa.nome, cnpjLimpo, empresa.endereco);
+
+      logger.info("Empresa com CNPJ {} cadastrada com sucesso. Linhas afetadas: {}", cnpjLimpo, rows);
+
+      return ResponseEntity.status(HttpStatus.CREATED).body(responseBody);
+
+    } catch (Exception e) {
+      logger.error("Erro inesperado ao tentar cadastrar CNPJ {}: {}", cnpjLimpo, e.getMessage(), e);
+
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(responseBody);
     }
-
-    if (empresa.endereco != null && empresa.endereco.length() > 200) {
-      response.put("erro", "O endereço pode ter no máximo 200 caracteres.");
-      return response;
-    }
-
-    String sql = "INSERT INTO empresas (nome, cnpj, endereco) VALUES (?, ?, ?)";
-    int rows = jdbcTemplate.update(sql, empresa.nome, cnpjLimpo, empresa.endereco);
-    response.put("mensagem", "Empresa cadastrada com sucesso.");
-    response.put("linhasAfetadas", rows);
-
-    return response;
   }
 
   @Operation(summary = "Atualizar dados de uma empresa pelo CNPJ")
