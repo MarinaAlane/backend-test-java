@@ -141,7 +141,7 @@ public class EmpresaController {
 
       logger.info("Empresa com CNPJ {} cadastrada com sucesso. Linhas afetadas: {}", cnpjLimpo, rows);
 
-      return ResponseEntity.status(HttpStatus.CREATED).body(responseBody);
+      return ResponseEntity.status(HttpStatus.OK).body(responseBody);
 
     } catch (Exception e) {
       logger.error("Erro inesperado ao tentar cadastrar CNPJ {}: {}", cnpjLimpo, e.getMessage(), e);
