@@ -76,16 +76,28 @@ public class EmpresaController {
         }
       """))))
   @GetMapping(produces = "application/json")
-  public List<Map<String, Object>> listarEmpresas() {
+  public ResponseEntity<Object> listarEmpresas() {
     String sql = "SELECT nome, cnpj, endereco FROM empresas";
-    List<Map<String, Object>> empresas = jdbcTemplate.queryForList(sql);
+    List<Map<String, Object>> empresas;
 
-    for (Map<String, Object> empresa : empresas) {
-      String cnpj = (String) empresa.get("cnpj");
-      empresa.put("cnpj", cnpj.replaceAll("(\\d{2})(\\d{3})(\\d{3})(\\d{4})(\\d{2})", "$1.$2.$3/$4-$5"));
+    try {
+      empresas = jdbcTemplate.queryForList(sql);
+
+      for (Map<String, Object> empresa : empresas) {
+        String cnpj = (String) empresa.get("cnpj");
+        empresa.put("cnpj", cnpj.replaceAll("(\\d{2})(\\d{3})(\\d{3})(\\d{4})(\\d{2})", "$1.$2.$3/$4-$5"));
+      }
+
+      return ResponseEntity.ok(empresas);
+
+    } catch (Exception e) {
+      logger.error("Erro inesperado ao tentar listar empresas: {}", e.getMessage(), e);
+
+      Map<String, Object> errorBody = new HashMap<>();
+      errorBody.put("erro", "Erro inesperado ao tentar listar as empresas.");
+
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorBody);
     }
-
-    return empresas;
   }
 
   @Operation(summary = "Buscar uma empresa pelo CNPJ")
