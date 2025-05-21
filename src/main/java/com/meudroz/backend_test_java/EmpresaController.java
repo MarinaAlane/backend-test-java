@@ -111,22 +111,52 @@ public class EmpresaController {
           """)))
   })
   @GetMapping(value = "/{cnpj}", produces = "application/json")
-  public Object buscarPorCnpj(@PathVariable String cnpj) {
-    Map<String, Object> responseBody = new HashMap<>();
+  public ResponseEntity<Object> buscarPorCnpj(@PathVariable String cnpj) {
+    String cnpjLimpo;
 
     try {
-      if (!empresaExiste(cnpj)) {
-        responseBody.put("erro", "Nenhuma empresa encontrada com o CNPJ fornecido.");
+      cnpjLimpo = cnpj.replaceAll("[^0-9]", "");
 
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(responseBody);
+      // TODO: Fazer desse bloco uma função auxiliar
+    } catch (NullPointerException e) {
+      logger.warn("CNPJ fornecido é nulo ou inválido para limpeza.");
+      Map<String, Object> errorBody = new HashMap<>();
+
+      errorBody.put("erro", "CNPJ fornecido é inválido.");
+
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorBody);
+    }
+
+    try {
+      if (!empresaExiste(cnpjLimpo)) {
+        Map<String, Object> responseBodyNotFound = new HashMap<>();
+        responseBodyNotFound.put("erro", "Nenhuma empresa encontrada com o CNPJ fornecido.");
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(responseBodyNotFound);
       }
 
-      return ResponseEntity.status(HttpStatus.OK).body(responseBody);
-    } catch (Exception e) {
-      logger.error("Erro inesperado ao tentar cadastrar CNPJ {}: {}", cnpj, e.getMessage(), e);
+      String sqlQuery = "SELECT nome, cnpj, endereco FROM empresas WHERE cnpj = ?";
+      List<Map<String, Object>> resultadoQuery = jdbcTemplate.queryForList(sqlQuery, cnpjLimpo);
 
-      responseBody.put("erro", "Erro inesperado ao tentar cadastrar CNPJ");
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(responseBody);
+      Map<String, Object> empresaEncontrada = resultadoQuery.get(0);
+
+      Object empresa = empresaEncontrada.get("cnpj");
+
+      // TODO: FAZER DESSE BLOCO FUNÇÃO AUXILIAR
+      String cnpjFormatado = ((String) empresa).replaceAll("(\\d{2})(\\d{3})(\\d{3})(\\d{4})(\\d{2})",
+          "$1.$2.$3/$4-$5");
+
+      empresaEncontrada.put("cnpj", cnpjFormatado);
+
+      return ResponseEntity.ok(empresaEncontrada);
+
+    } catch (Exception e) {
+      logger.error("Erro inesperado ao tentar buscar empresa com CNPJ (limpo) {}: {}", cnpjLimpo, e.getMessage(), e);
+      Map<String, Object> responseBodyError = new HashMap<>();
+
+      responseBodyError.put("erro", "Erro inesperado ao tentar buscar a empresa.");
+
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(responseBodyError);
     }
   }
 
