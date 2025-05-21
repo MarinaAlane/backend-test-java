@@ -80,7 +80,6 @@ public class EmpresaController {
     String sql = "SELECT nome, cnpj, endereco FROM empresas";
     List<Map<String, Object>> empresas = jdbcTemplate.queryForList(sql);
 
-    // TODO: CRIAR FUNÇÃO AUXILIAR
     for (Map<String, Object> empresa : empresas) {
       String cnpj = (String) empresa.get("cnpj");
       empresa.put("cnpj", cnpj.replaceAll("(\\d{2})(\\d{3})(\\d{3})(\\d{4})(\\d{2})", "$1.$2.$3/$4-$5"));
@@ -101,19 +100,22 @@ public class EmpresaController {
   })
   @GetMapping(value = "/{cnpj}", produces = "application/json")
   public Object buscarPorCnpj(@PathVariable String cnpj) {
-    String sql = "SELECT nome, cnpj, endereco FROM empresas WHERE cnpj = ?";
-    List<Map<String, Object>> resultado = jdbcTemplate.queryForList(sql, cnpj);
+    Map<String, Object> responseBody = new HashMap<>();
 
-    if (resultado.isEmpty()) {
-      return Map.of("erro", "Empresa não encontrada com o CNPJ fornecido.");
+    try {
+      if (!empresaExiste(cnpj)) {
+        responseBody.put("erro", "Nenhuma empresa encontrada com o CNPJ fornecido.");
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(responseBody);
+      }
+
+      return ResponseEntity.status(HttpStatus.OK).body(responseBody);
+    } catch (Exception e) {
+      logger.error("Erro inesperado ao tentar cadastrar CNPJ {}: {}", cnpj, e.getMessage(), e);
+
+      responseBody.put("erro", "Erro inesperado ao tentar cadastrar CNPJ");
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(responseBody);
     }
-
-    Map<String, Object> empresa = resultado.get(0);
-    String cnpjFormatado = ((String) empresa.get("cnpj")).replaceAll("(\\d{2})(\\d{3})(\\d{3})(\\d{4})(\\d{2})",
-        "$1.$2.$3/$4-$5");
-    empresa.put("cnpj", cnpjFormatado);
-
-    return empresa;
   }
 
   @Operation(summary = "Cadastrar uma nova empresa")
