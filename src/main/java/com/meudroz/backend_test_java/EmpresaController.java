@@ -80,6 +80,7 @@ public class EmpresaController {
     String sql = "SELECT nome, cnpj, endereco FROM empresas";
     List<Map<String, Object>> empresas = jdbcTemplate.queryForList(sql);
 
+    // TODO: CRIAR FUNÇÃO AUXILIAR
     for (Map<String, Object> empresa : empresas) {
       String cnpj = (String) empresa.get("cnpj");
       empresa.put("cnpj", cnpj.replaceAll("(\\d{2})(\\d{3})(\\d{3})(\\d{4})(\\d{2})", "$1.$2.$3/$4-$5"));
@@ -159,34 +160,32 @@ public class EmpresaController {
             }
           """)))
   })
+  // Melhorar a consulta que verifica se a empresa empresaExiste
+  // Permitir alteração de apenas o endereço
   @PutMapping(value = "/{cnpj}", consumes = "application/json", produces = "application/json")
-  public Map<String, Object> atualizarEmpresa(@PathVariable String cnpj, @RequestBody EmpresaDTO empresa) {
-    Map<String, Object> response = new HashMap<>();
+  public ResponseEntity<Map<String, Object>> atualizarEmpresa(@PathVariable String cnpj,
+      @RequestBody EmpresaDTO empresa) {
+    Map<String, Object> responseBody = new HashMap<>();
+    try {
+      String sql = "UPDATE empresas SET nome = ?, endereco = ? WHERE cnpj = ?";
+      int rows = jdbcTemplate.update(sql, empresa.nome, empresa.endereco, cnpj);
 
-    if (empresa.nome == null || empresa.nome.trim().isEmpty()) {
-      response.put("erro", "O nome é obrigatório.");
-      return response;
+      if (rows == 0) {
+        responseBody.put("erro", "Nenhuma empresa encontrada com o CNPJ fornecido.");
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(responseBody);
+      }
+
+      responseBody.put("mensagem", "Empresa atualizada com sucesso.");
+      responseBody.put("linhasAfetadas", rows);
+
+      return ResponseEntity.status(HttpStatus.OK).body(responseBody);
+
+    } catch (Exception e) {
+      logger.error("Erro inesperado ao tentar atualizar empresa com CNPJ {}: {}", cnpj, e.getMessage(), e);
+
+      Map<String, Object> errorResponseBody = new HashMap<>();
+
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponseBody);
     }
-    if (empresa.nome.length() > 100) {
-      response.put("erro", "O nome pode ter no máximo 100 caracteres.");
-      return response;
-    }
-
-    if (empresa.endereco != null && empresa.endereco.length() > 200) {
-      response.put("erro", "O endereço pode ter no máximo 200 caracteres.");
-      return response;
-    }
-
-    String sql = "UPDATE empresas SET nome = ?, endereco = ? WHERE cnpj = ?";
-    int rows = jdbcTemplate.update(sql, empresa.nome, empresa.endereco, cnpj);
-
-    if (rows == 0) {
-      response.put("erro", "Nenhuma empresa encontrada com o CNPJ fornecido.");
-      return response;
-    }
-
-    response.put("mensagem", "Empresa atualizada com sucesso.");
-    response.put("linhasAfetadas", rows);
-    return response;
   }
 }
