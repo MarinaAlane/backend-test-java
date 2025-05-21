@@ -134,6 +134,8 @@ public class EmpresaController {
       if (empresaExiste(cnpjLimpo)) {
         logger.warn("CNPJ {} já cadastrado", cnpjLimpo);
 
+        responseBody.put("erro", "CNPJ já cadastrado.");
+
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseBody);
       }
 
@@ -141,6 +143,9 @@ public class EmpresaController {
       int rows = jdbcTemplate.update(sql, empresa.nome, cnpjLimpo, empresa.endereco);
 
       logger.info("Empresa com CNPJ {} cadastrada com sucesso. Linhas afetadas: {}", cnpjLimpo, rows);
+
+      responseBody.put("mensagem", "Empresa cadastrada com sucesso.");
+      responseBody.put("linhasAfetadas", rows);
 
       return ResponseEntity.status(HttpStatus.OK).body(responseBody);
 
@@ -160,19 +165,20 @@ public class EmpresaController {
             }
           """)))
   })
-  // Melhorar a consulta que verifica se a empresa empresaExiste
   // Permitir alteração de apenas o endereço
+  // Adc PATCH?
   @PutMapping(value = "/{cnpj}", consumes = "application/json", produces = "application/json")
   public ResponseEntity<Map<String, Object>> atualizarEmpresa(@PathVariable String cnpj,
       @RequestBody EmpresaDTO empresa) {
     Map<String, Object> responseBody = new HashMap<>();
     try {
-      
+
       String sql = "UPDATE empresas SET nome = ?, endereco = ? WHERE cnpj = ?";
       int rows = jdbcTemplate.update(sql, empresa.nome, empresa.endereco, cnpj);
 
       if (!empresaExiste(cnpj)) {
         responseBody.put("erro", "Nenhuma empresa encontrada com o CNPJ fornecido.");
+
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(responseBody);
       }
 
