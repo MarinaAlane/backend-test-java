@@ -18,4 +18,10 @@
       <column name="endereco" type="VARCHAR(200)" />
     </createTable>
   </changeSet>
+
+    <changeSet id="2025052101" author="msilvestrin">
+    <addColumn tableName="empresas">
+      <column name="telefone" type="VARCHAR(20)" />
+    </addColumn>
+  </changeSet>
 </databaseChangeLog>

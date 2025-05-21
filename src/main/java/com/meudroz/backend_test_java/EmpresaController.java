@@ -69,6 +69,10 @@ public class EmpresaController {
     @Schema(description = "Endereço da empresa", example = "Rua do teste, 123")
     @Size(max = 200, message = "O endereço pode ter no máximo 200 caracteres.")
     public String endereco;
+
+    @Schema(description = "Telefone da empresa", example = "(11) 12345-6789")
+    @Size(max = 11, message = "O telefone pode ter no máximo 20 caracteres.")
+    public String telefone;
   }
 
   @Operation(summary = "Listar todas as empresas")
@@ -76,12 +80,13 @@ public class EmpresaController {
         {
           "nome": "JAVA TESTE Ltda",
           "cnpj": "12.345.678/0001-12",
-          "endereco": "Rua do teste, 123"
+          "endereco": "Rua do teste, 123",
+          "telefone": "(11) 12345-6789"
         }
       """))))
   @GetMapping(produces = "application/json")
   public ResponseEntity<Object> listarEmpresas() {
-    String sql = "SELECT nome, cnpj, endereco FROM empresas";
+    String sql = "SELECT nome, cnpj, endereco, telefone FROM empresas";
     List<Map<String, Object>> empresas;
 
     try {
@@ -112,10 +117,12 @@ public class EmpresaController {
             {
               "nome": "JAVA TESTE Ltda",
               "cnpj": "12.345.678/0001-12",
-              "endereco": "Rua do teste, 123"
+              "endereco": "Rua do teste, 123",
+              "telefone": "(11) 12345-6789"
             }
           """)))
   })
+  // TODO: ERRO AO ENVIAR CNPJ COM PONTOS
   @GetMapping(value = "/{cnpj}", produces = "application/json")
   public ResponseEntity<Object> buscarPorCnpj(@PathVariable String cnpj) {
     String cnpjLimpo;
@@ -140,7 +147,7 @@ public class EmpresaController {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(responseBodyNotFound);
       }
 
-      String sqlQuery = "SELECT nome, cnpj, endereco FROM empresas WHERE cnpj = ?";
+      String sqlQuery = "SELECT nome, cnpj, endereco, telefone FROM empresas WHERE cnpj = ?";
       List<Map<String, Object>> resultadoQuery = jdbcTemplate.queryForList(sqlQuery, cnpjLimpo);
 
       Map<String, Object> empresaEncontrada = resultadoQuery.get(0);
@@ -186,15 +193,15 @@ public class EmpresaController {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseBody);
       }
 
-      String sql = "INSERT INTO empresas (nome, cnpj, endereco) VALUES (?, ?, ?)";
-      int rows = jdbcTemplate.update(sql, empresa.nome, cnpjLimpo, empresa.endereco);
+      String sql = "INSERT INTO empresas (nome, cnpj, endereco, telefone) VALUES (?, ?, ?, ?)";
+      int rows = jdbcTemplate.update(sql, empresa.nome, cnpjLimpo, empresa.endereco, empresa.telefone);
 
       logger.info("Empresa com CNPJ {} cadastrada com sucesso. Linhas afetadas: {}", cnpjLimpo, rows);
 
       responseBody.put("mensagem", "Empresa cadastrada com sucesso.");
       responseBody.put("linhasAfetadas", rows);
 
-      return ResponseEntity.status(HttpStatus.OK).body(responseBody);
+      return ResponseEntity.status(HttpStatus.CREATED).body(responseBody);
 
     } catch (Exception e) {
       logger.error("Erro inesperado ao tentar cadastrar CNPJ {}: {}", cnpjLimpo, e.getMessage(), e);
@@ -220,8 +227,8 @@ public class EmpresaController {
     Map<String, Object> responseBody = new HashMap<>();
     try {
 
-      String sql = "UPDATE empresas SET nome = ?, endereco = ? WHERE cnpj = ?";
-      int rows = jdbcTemplate.update(sql, empresa.nome, empresa.endereco, cnpj);
+      String sql = "UPDATE empresas SET nome = ?, endereco = ?, telefone = ? WHERE cnpj = ?";
+      int rows = jdbcTemplate.update(sql, empresa.nome, empresa.endereco, empresa.telefone, cnpj);
 
       if (!empresaExiste(cnpj)) {
         responseBody.put("erro", "Nenhuma empresa encontrada com o CNPJ fornecido.");
