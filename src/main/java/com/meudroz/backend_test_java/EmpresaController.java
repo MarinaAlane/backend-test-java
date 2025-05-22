@@ -34,11 +34,13 @@ import jakarta.validation.Valid;
 public class EmpresaController {
 
   private final JdbcTemplate jdbcTemplate;
+  private final EmpresaService empresaService;
 
   private static final Logger logger = LoggerFactory.getLogger(EmpresaController.class);
 
-  public EmpresaController(JdbcTemplate jdbcTemplate) {
+  public EmpresaController(JdbcTemplate jdbcTemplate, EmpresaService empresaService) {
     this.jdbcTemplate = jdbcTemplate;
+    this.empresaService = empresaService;
   }
 
   private boolean empresaExiste(String cnpj) {
@@ -62,29 +64,19 @@ public class EmpresaController {
         }
       """))))
   @GetMapping(produces = "application/json")
-  public ResponseEntity<Object> listarEmpresas() {
-    String sql = "SELECT nome, cnpj, endereco, telefone FROM empresas";
-    List<Map<String, Object>> empresas;
-
+  public ResponseEntity<List<Map<String, Object>>> listarTodasEmpresas() {
     try {
-      empresas = jdbcTemplate.queryForList(sql);
-
-      for (Map<String, Object> empresa : empresas) {
-        String cnpj = (String) empresa.get("cnpj");
-        String cnpjFormatado = formatarCnpj((String) empresa.get("cnpj"));
-
-        empresa.put(cnpj, cnpjFormatado);
+      List<Map<String, Object>> empresas = empresaService.listarEmpresas();
+      if (empresas.isEmpty()) {
+        return ResponseEntity.noContent().build();
       }
-
       return ResponseEntity.ok(empresas);
-
     } catch (Exception e) {
-      logger.error("Erro inesperado ao tentar listar empresas: {}", e.getMessage(), e);
+      logger.error("Erro ao listar todas as empresas: {}", e.getMessage(), e);
 
       Map<String, Object> errorBody = new HashMap<>();
-      errorBody.put("erro", "Erro inesperado ao tentar listar as empresas.");
-
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorBody);
+      errorBody.put("erro", "Erro interno ao buscar empresas.");
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(List.of(errorBody));
     }
   }
 
@@ -99,7 +91,6 @@ public class EmpresaController {
             }
           """)))
   })
-  // TODO: ERRO AO ENVIAR CNPJ COM PONTOS
   @GetMapping(value = "/{cnpj}", produces = "application/json")
   public ResponseEntity<Object> buscarPorCnpj(@PathVariable String cnpj) {
     String cnpjLimpo;
