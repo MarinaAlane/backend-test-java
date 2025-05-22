@@ -27,8 +27,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 
 @RestController
 @RequestMapping("/empresas")
@@ -52,27 +50,6 @@ public class EmpresaController {
 
   private String formatarCnpj(String cnpj) {
     return cnpj.replaceAll("(\\d{2})(\\d{3})(\\d{3})(\\d{4})(\\d{2})", "$1.$2.$3/$4-$5");
-  }
-
-  @Schema(name = "EmpresaDTO", description = "Dados da empresa")
-  public static class EmpresaDTO {
-    @Schema(description = "Nome da empresa", example = "JAVA TESTE Ltda")
-    @Size(max = 100, message = "O nome pode ter no máximo 100 caracteres.")
-    @NotBlank(message = "O nome é obrigatório.")
-    public String nome;
-
-    @Schema(description = "CNPJ da empresa", example = "12345678000112")
-    @Size(min = 14, max = 14, message = "O CNPJ deve ter exatamente 14 dígitos.")
-    @NotBlank(message = "O CNPJ é obrigatório.")
-    public String cnpj;
-
-    @Schema(description = "Endereço da empresa", example = "Rua do teste, 123")
-    @Size(max = 200, message = "O endereço pode ter no máximo 200 caracteres.")
-    public String endereco;
-
-    @Schema(description = "Telefone da empresa", example = "(11) 12345-6789")
-    @Size(max = 11, message = "O telefone pode ter no máximo 20 caracteres.")
-    public String telefone;
   }
 
   @Operation(summary = "Listar todas as empresas")
