@@ -114,7 +114,11 @@ public class EmpresaService {
   public Map<String, Object> criarEmpresa(EmpresaDTO empresaDto) throws Exception {
     String cnpjLimpo = limparCnpj(empresaDto.cnpj);
 
+<<<<<<< HEAD
     verificaCnpj(cnpjLimpo);
+=======
+    verificaValidadeCnpj(cnpjLimpo);
+>>>>>>> parent of aa8b03a (fix: ajustes nas mensagens de erro do método post)
 
     if (empresaDto.telefone.length() != 11) {
       logger.warn("Telefone inválido: {}", empresaDto.telefone);
