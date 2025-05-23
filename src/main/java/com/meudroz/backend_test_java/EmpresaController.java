@@ -190,8 +190,8 @@ public class EmpresaController {
   })
   // Permitir alteração de apenas o endereço
   // Adc PATCH?
-  @PutMapping(value = "/{cnpj}", consumes = "application/json", produces = "application/json")
-  public ResponseEntity<Map<String, Object>> editarEmpresa(@PathVariable String cnpj,
+  @PutMapping(value = "/buscar", consumes = "application/json", produces = "application/json")
+  public ResponseEntity<Map<String, Object>> editarEmpresa(@RequestParam String cnpj,
       @RequestBody EmpresaDTO empresa) {
     Map<String, Object> responseBody = new HashMap<>();
     try {
@@ -199,11 +199,12 @@ public class EmpresaController {
       String sql = "UPDATE empresas SET nome = ?, endereco = ?, telefone = ? WHERE cnpj = ?";
       int rows = jdbcTemplate.update(sql, empresa.nome, empresa.endereco, empresa.telefone, cnpj);
 
-      if (!empresaExiste(cnpj)) {
-        responseBody.put("erro", "Nenhuma empresa encontrada com o CNPJ fornecido.");
+      // // if (!empresaExiste(cnpj)) {
+      // // responseBody.put("erro", "Nenhuma empresa encontrada com o CNPJ
+      // fornecido.");
 
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(responseBody);
-      }
+      // // return ResponseEntity.status(HttpStatus.NOT_FOUND).body(responseBody);
+      // }
 
       responseBody.put("mensagem", "Empresa atualizada com sucesso.");
       responseBody.put("linhasAfetadas", rows);
