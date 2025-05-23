@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -91,8 +92,8 @@ public class EmpresaController {
             }
           """)))
   })
-  @GetMapping(value = "/{cnpj}", produces = "application/json")
-  public ResponseEntity<Object> buscarPorCnpj(@PathVariable String cnpj) {
+  @GetMapping(value = "/buscar", produces = "application/json")
+  public ResponseEntity<Object> buscarPorCnpj(@RequestParam String cnpj) {
     String cnpjLimpo;
 
     try {
