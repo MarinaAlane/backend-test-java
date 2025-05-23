@@ -86,7 +86,7 @@ public class EmpresaController {
     String cnpjLimpo;
 
     try {
-      cnpjLimpo = empresaService.limparCnpj(cnpj);
+      cnpjLimpo = cnpj.replaceAll("[^0-9]", "");
 
     } catch (NullPointerException e) {
       logger.warn("CNPJ fornecido é nulo ou inválido para limpeza.");
@@ -112,7 +112,7 @@ public class EmpresaController {
 
       Object empresa = empresaEncontrada.get("cnpj");
 
-      String cnpjFormatado = empresaService.formatarCnpj((String) empresa);
+      String cnpjFormatado = formatarCnpj((String) empresa);
 
       empresaEncontrada.put("cnpj", cnpjFormatado);
 

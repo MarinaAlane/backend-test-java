@@ -29,7 +29,7 @@ public class EmpresaService {
     return count != null && count > 0;
   }
 
-  private String verificaValidadeCnpj(String cnpj) {
+  private String verificaCnpj(String cnpj) {
     if (cnpj.length() != 14) {
       logger.warn("CNPJ fornecido é nulo ou inválido para limpeza.");
 
@@ -41,11 +41,11 @@ public class EmpresaService {
     return cnpj;
   }
 
-  public String formatarCnpj(String cnpj) {
+  private String formatarCnpj(String cnpj) {
     return cnpj.replaceAll("(\\d{2})(\\d{3})(\\d{3})(\\d{4})(\\d{2})", "$1.$2.$3/$4-$5");
   }
 
-  public String limparCnpj(String cnpj) {
+  private String limparCnpj(String cnpj) {
     return cnpj.replaceAll("[^0-9]", "");
   }
 
@@ -114,8 +114,21 @@ public class EmpresaService {
   public Map<String, Object> criarEmpresa(EmpresaDTO empresaDto) throws Exception {
     String cnpjLimpo = limparCnpj(empresaDto.cnpj);
 
-    verificaValidadeCnpj(cnpjLimpo);
-    // TODO: Validar os dados
+    verificaCnpj(cnpjLimpo);
+
+    if (empresaDto.telefone.length() != 11) {
+      logger.warn("Telefone inválido: {}", empresaDto.telefone);
+
+      Map<String, Object> errorBody = new HashMap<>();
+      errorBody.put("erro", "Telefone inválido.");
+    }
+
+    if (verificaEmpresaCadastrada(cnpjLimpo)) {
+      logger.warn("CNPJ {} já cadastrado", cnpjLimpo);
+
+      Map<String, Object> errorBody = new HashMap<>();
+      errorBody.put("erro", "CNPJ já cadastrado.");
+    }
 
     String sql = "INSERT INTO empresas (nome, cnpj, endereco, telefone) VALUES (?, ?, ?, ?)";
     int rows = jdbcTemplate.update(sql, empresaDto.nome, cnpjLimpo, empresaDto.endereco, empresaDto.telefone);
@@ -138,7 +151,7 @@ public class EmpresaService {
   public Map<String, Object> EditarEmpresa(String cnpjPath, EmpresaDTO empresaDto) throws Exception {
     String cnpjLimpoPath = limparCnpj(cnpjPath);
 
-    verificaValidadeCnpj(cnpjLimpoPath);
+    verificaCnpj(cnpjLimpoPath);
 
     if (!verificaEmpresaCadastrada(cnpjLimpoPath)) {
 
