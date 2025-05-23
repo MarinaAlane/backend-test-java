@@ -83,10 +83,10 @@ public class EmpresaController {
   })
   @GetMapping(value = "/buscar", produces = "application/json")
   public ResponseEntity<Object> buscarPorCnpj(@RequestParam String cnpj) {
-    String cnpjLimpo;
+    String cnpjLimpo = null;
 
     try {
-      cnpjLimpo = empresaService.limparCnpj(cnpjLimpo);
+      cnpjLimpo = empresaService.limparCnpj(cnpj);
 
     } catch (NullPointerException e) {
       logger.warn("CNPJ fornecido é nulo ou inválido para limpeza.");
@@ -112,7 +112,7 @@ public class EmpresaController {
 
       Object empresa = empresaEncontrada.get("cnpj");
 
-      String cnpjFormatado = formatarCnpj((String) empresa);
+      String cnpjFormatado = empresaService.formatarCnpj((String) empresa);
 
       empresaEncontrada.put("cnpj", cnpjFormatado);
 
@@ -186,11 +186,9 @@ public class EmpresaController {
     Map<String, Object> responseBody = new HashMap<>();
     try {
 
-      String sql = "UPDATE empresas SET nome = ?, endereco = ?, telefone = ? WHERE cnpj = ?";
-      int rows = jdbcTemplate.update(sql, empresa.nome, empresa.endereco, empresa.telefone, cnpj);
+      empresaService.EditarEmpresa(cnpj, empresa);
 
       responseBody.put("mensagem", "Empresa atualizada com sucesso.");
-      responseBody.put("linhasAfetadas", rows);
 
       return ResponseEntity.status(HttpStatus.OK).body(responseBody);
 
