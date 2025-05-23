@@ -41,11 +41,11 @@ public class EmpresaService {
     return cnpj;
   }
 
-  private String formatarCnpj(String cnpj) {
+  public String formatarCnpj(String cnpj) {
     return cnpj.replaceAll("(\\d{2})(\\d{3})(\\d{3})(\\d{4})(\\d{2})", "$1.$2.$3/$4-$5");
   }
 
-  private String limparCnpj(String cnpj) {
+  public String limparCnpj(String cnpj) {
     return cnpj.replaceAll("[^0-9]", "");
   }
 
@@ -113,12 +113,6 @@ public class EmpresaService {
    */
   public Map<String, Object> criarEmpresa(EmpresaDTO empresaDto) throws Exception {
     String cnpjLimpo = limparCnpj(empresaDto.cnpj);
-
-<<<<<<< HEAD
-    verificaCnpj(cnpjLimpo);
-=======
-    verificaValidadeCnpj(cnpjLimpo);
->>>>>>> parent of aa8b03a (fix: ajustes nas mensagens de erro do método post)
 
     if (empresaDto.telefone.length() != 11) {
       logger.warn("Telefone inválido: {}", empresaDto.telefone);

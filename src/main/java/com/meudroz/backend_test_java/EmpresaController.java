@@ -86,7 +86,7 @@ public class EmpresaController {
     String cnpjLimpo;
 
     try {
-      cnpjLimpo = cnpj.replaceAll("[^0-9]", "");
+      cnpjLimpo = empresaService.limparCnpj(cnpjLimpo);
 
     } catch (NullPointerException e) {
       logger.warn("CNPJ fornecido é nulo ou inválido para limpeza.");
@@ -188,12 +188,6 @@ public class EmpresaController {
 
       String sql = "UPDATE empresas SET nome = ?, endereco = ?, telefone = ? WHERE cnpj = ?";
       int rows = jdbcTemplate.update(sql, empresa.nome, empresa.endereco, empresa.telefone, cnpj);
-
-      if (!empresaExiste(cnpj)) {
-        responseBody.put("erro", "Nenhuma empresa encontrada com o CNPJ fornecido.");
-
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(responseBody);
-      }
 
       responseBody.put("mensagem", "Empresa atualizada com sucesso.");
       responseBody.put("linhasAfetadas", rows);

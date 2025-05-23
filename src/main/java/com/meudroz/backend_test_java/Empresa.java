@@ -29,7 +29,7 @@ public class Empresa {
     }
 
     public void setCnpj(String cnpj) {
-        this.cnpj = (cnpj != null) ? cnpj.replaceAll("[^0-9]", "") : null;
+        this.cnpj = cnpj;
     }
 
     public String getEndereco() {
@@ -46,7 +46,7 @@ public class Empresa {
 
     public void setTelefone(String telefone) {
 
-        this.telefone = (telefone != null) ? telefone.replaceAll("[^0-9]", "") : null;
+        this.telefone = telefone;
     }
 
     @Override
