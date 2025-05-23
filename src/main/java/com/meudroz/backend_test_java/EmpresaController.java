@@ -44,13 +44,6 @@ public class EmpresaController {
     this.empresaService = empresaService;
   }
 
-  private boolean empresaExiste(String cnpj) {
-    String sql = "SELECT COUNT(*) FROM empresas WHERE cnpj = ?";
-
-    Integer count = jdbcTemplate.queryForObject(sql, Integer.class, cnpj);
-    return count != null && count > 0;
-  }
-
   @Operation(summary = "Listar todas as empresas")
   @ApiResponse(responseCode = "200", description = "Lista de empresas cadastradas", content = @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(example = """
         {
@@ -105,7 +98,7 @@ public class EmpresaController {
     }
 
     try {
-      if (!empresaExiste(cnpjLimpo)) {
+      if (!empresaService.verificaEmpresaCadastrada(cnpjLimpo)) {
         Map<String, Object> responseBodyNotFound = new HashMap<>();
         responseBodyNotFound.put("erro", "Nenhuma empresa encontrada com o CNPJ fornecido.");
 
@@ -147,10 +140,10 @@ public class EmpresaController {
   @PostMapping(consumes = "application/json", produces = "application/json")
   public ResponseEntity<Map<String, Object>> cadastrarEmpresa(@Valid @RequestBody EmpresaDTO empresa) {
     Map<String, Object> responseBody = new HashMap<>();
-    String cnpjLimpo = empresa.cnpj.replaceAll("[^0-9]", "");
+    String cnpjLimpo = empresaService.limparCnpj(empresa.cnpj);
 
     try {
-      if (empresaExiste(cnpjLimpo)) {
+      if (empresaService.verificaEmpresaCadastrada(cnpjLimpo)) {
         logger.warn("CNPJ {} já cadastrado", cnpjLimpo);
 
         responseBody.put("erro", "CNPJ já cadastrado.");

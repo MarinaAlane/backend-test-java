@@ -23,7 +23,7 @@ public class EmpresaService {
     this.jdbcTemplate = jdbcTemplate;
   }
 
-  private boolean verificaEmpresaCadastrada(String cnpj) {
+  public boolean verificaEmpresaCadastrada(String cnpj) {
     String sql = "SELECT COUNT(*) FROM empresas WHERE cnpj = ?";
     Integer count = jdbcTemplate.queryForObject(sql, Integer.class, cnpj);
     return count != null && count > 0;
