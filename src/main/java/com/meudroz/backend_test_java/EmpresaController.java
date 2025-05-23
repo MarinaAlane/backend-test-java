@@ -190,7 +190,7 @@ public class EmpresaController {
   // Permitir alteração de apenas o endereço
   // Adc PATCH?
   @PutMapping(value = "/{cnpj}", consumes = "application/json", produces = "application/json")
-  public ResponseEntity<Map<String, Object>> atualizarEmpresa(@PathVariable String cnpj,
+  public ResponseEntity<Map<String, Object>> editarEmpresa(@PathVariable String cnpj,
       @RequestBody EmpresaDTO empresa) {
     Map<String, Object> responseBody = new HashMap<>();
     try {

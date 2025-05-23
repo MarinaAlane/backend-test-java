@@ -1,10 +1,9 @@
 package com.meudroz.backend_test_java;
 
-import com.meudroz.backend_test_java.EmpresaDTO;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
@@ -24,10 +23,22 @@ public class EmpresaService {
     this.jdbcTemplate = jdbcTemplate;
   }
 
-  private boolean empresaExiste(String cnpjLimpo) {
+  private boolean verificaEmpresaCadastrada(String cnpj) {
     String sql = "SELECT COUNT(*) FROM empresas WHERE cnpj = ?";
-    Integer count = jdbcTemplate.queryForObject(sql, Integer.class, cnpjLimpo);
+    Integer count = jdbcTemplate.queryForObject(sql, Integer.class, cnpj);
     return count != null && count > 0;
+  }
+
+  private String verificaCnpj(String cnpj) {
+    if (cnpj.length() != 14) {
+      logger.warn("CNPJ fornecido é nulo ou inválido para limpeza.");
+
+      Map<String, Object> errorBody = new HashMap<>();
+      errorBody.put("erro", "CNPJ fornecido é inválido.");
+      return "CNPJ inválido";
+    }
+
+    return cnpj;
   }
 
   private String formatarCnpj(String cnpj) {
@@ -59,38 +70,38 @@ public class EmpresaService {
   /**
    * Busca empresa por CNPJ.
    * 
-   * @param empresaDto DTO com os dados da empresa.
-   * @return Um Map contendo os dados da empresa ou vazio se não encontrada.
-   * @throws Exception Se o CNPJ não for válido ou ocorrer outro erro.
+   * @param cnpj O CNPJ da empresa a ser buscada.
+   * @return Um ResponseEntity contendo os dados da empresa ou mensagem de erro.
    */
-  public Optional<Map<String, Object>> buscarEmpresas(String cnpjPath) {
+  public Optional<Map<String, Object>> buscarPorCnpj(String cnpjPath) {
     String cnpjLimpo = limparCnpj(cnpjPath);
 
-    if (cnpjLimpo == null || cnpjLimpo.isEmpty()) {
+    if (cnpjLimpo.length() != 14) {
+      logger.warn("Tentativa de busca com CNPJ inválido (após limpeza não tem 14 dígitos): {}", cnpjPath);
 
-      logger.warn("Tentativa de busca com CNPJ inválido após limpeza: {}", cnpjPath);
-
-      Map<String, Object> erro = new HashMap<>();
-      erro.put("erro", "CNPJ inválido após limpeza. Verifique o formato e tente novamente.");
-    }
-
-    if (!empresaExiste(cnpjLimpo)) {
-      return Optional.empty();
+      Map<String, Object> errorResponse = new HashMap<>();
+      errorResponse.put("error", "CNPJ inválido. Deve conter 14 dígitos numéricos.");
+      return Optional.of(errorResponse);
     }
 
     String sqlQuery = "SELECT nome, cnpj, endereco, telefone FROM empresas WHERE cnpj = ?";
-    List<Map<String, Object>> query = jdbcTemplate.queryForList(sqlQuery, cnpjLimpo);
+    try {
+      Map<String, Object> empresa = jdbcTemplate.queryForMap(sqlQuery, cnpjLimpo);
+      String cnpj = (String) empresa.get("cnpj");
 
-    if (query.isEmpty()) {
+      empresa.put("cnpj", formatarCnpj(cnpj));
 
-      return Optional.empty();
+      logger.info("Empresa encontrada para o CNPJ (limpo): {}", cnpjLimpo);
+
+      return Optional.of(empresa);
+    } catch (EmptyResultDataAccessException e) {
+      logger.info("Nenhuma empresa encontrada para o CNPJ (limpo): {}", cnpjLimpo);
+
+      Map<String, Object> empresa = new HashMap<>();
+      empresa.put("erro", "Nenhuma empresa encontrada com o CNPJ fornecido.");
+
+      return Optional.of(empresa);
     }
-
-    Map<String, Object> empresa = query.get(0);
-    String cnpj = (String) empresa.get("cnpj");
-    empresa.put("cnpj", formatarCnpj(cnpj));
-
-    return Optional.of(empresa);
   }
 
   /**
@@ -103,18 +114,20 @@ public class EmpresaService {
   public Map<String, Object> criarEmpresa(EmpresaDTO empresaDto) throws Exception {
     String cnpjLimpo = limparCnpj(empresaDto.cnpj);
 
-    if (cnpjLimpo.length() != 14) {
-      throw new IllegalArgumentException("CNPJ inválido. Deve conter 14 dígitos numéricos.");
-    }
+    verificaCnpj(cnpjLimpo);
 
     if (empresaDto.telefone.length() != 11) {
-      throw new IllegalArgumentException("Telefone inválido.");
+      logger.warn("Telefone inválido: {}", empresaDto.telefone);
+
+      Map<String, Object> errorBody = new HashMap<>();
+      errorBody.put("erro", "Telefone inválido.");
     }
 
-    if (empresaExiste(cnpjLimpo)) {
+    if (verificaEmpresaCadastrada(cnpjLimpo)) {
       logger.warn("CNPJ {} já cadastrado", cnpjLimpo);
 
-      throw new Exception("CNPJ já cadastrado.");
+      Map<String, Object> errorBody = new HashMap<>();
+      errorBody.put("erro", "CNPJ já cadastrado.");
     }
 
     String sql = "INSERT INTO empresas (nome, cnpj, endereco, telefone) VALUES (?, ?, ?, ?)";
@@ -142,21 +155,18 @@ public class EmpresaService {
    * @return Um Map contendo a mensagem de sucesso e as linhas afetadas.
    * @throws Exception Se a empresa não for encontrada ou ocorrer outro erro.
    */
-  public Map<String, Object> modificarEmpresa(String cnpjPath, EmpresaDTO empresaDto) throws Exception {
+  public Map<String, Object> EditarEmpresa(String cnpjPath, EmpresaDTO empresaDto) throws Exception {
     String cnpjLimpoPath = limparCnpj(cnpjPath);
 
-    if (cnpjLimpoPath == null || cnpjLimpoPath.length() != 14) {
-      throw new IllegalArgumentException("CNPJ do path inválido. Deve conter 14 dígitos numéricos.");
-    }
+    verificaCnpj(cnpjLimpoPath);
 
-    if (!empresaExiste(cnpjLimpoPath)) {
+    if (!verificaEmpresaCadastrada(cnpjLimpoPath)) {
 
       throw new Exception("Nenhuma empresa encontrada com o CNPJ fornecido para atualização.");
     }
 
     String sql = "UPDATE empresas SET nome = ?, endereco = ?, telefone = ? WHERE cnpj = ?";
     int rows = jdbcTemplate.update(sql, empresaDto.nome, empresaDto.endereco, empresaDto.telefone, cnpjLimpoPath);
-.
 
     if (rows == 0) {
       logger.warn("Nenhuma linha foi atualizada para o CNPJ {}, embora a empresa exista. Os dados podem ser os mesmos.",
@@ -164,14 +174,17 @@ public class EmpresaService {
     }
 
     logger.info("Empresa com CNPJ {} tentada atualização. Linhas afetadas: {}", cnpjLimpoPath, rows);
+
     Map<String, Object> resultado = new HashMap<>();
     resultado.put("mensagem", "Empresa atualizada com sucesso.");
     resultado.put("linhasAfetadas", rows);
+
     resultado.put("empresa", Map.of(
         "nome", empresaDto.nome,
         "cnpj", formatarCnpj(cnpjLimpoPath),
         "endereco", empresaDto.endereco,
         "telefone", empresaDto.telefone));
+
     return resultado;
   }
 }
