@@ -149,17 +149,18 @@ public class EmpresaController {
         responseBody.put("erro", "CNPJ já cadastrado.");
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseBody);
+      } else {
+        empresaService.criarEmpresa(empresa);
+
+        responseBody.put("mensagem", "Empresa cadastrada com sucesso.");
+        responseBody.put("empresa", Map.of(
+            "nome", empresa.nome,
+            "cnpj", empresa.cnpj,
+            "endereco", empresa.endereco,
+            "telefone", empresa.telefone));
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(responseBody);
       }
-
-      String sql = "INSERT INTO empresas (nome, cnpj, endereco, telefone) VALUES (?, ?, ?, ?)";
-      int rows = jdbcTemplate.update(sql, empresa.nome, cnpjLimpo, empresa.endereco, empresa.telefone);
-
-      logger.info("Empresa com CNPJ {} cadastrada com sucesso. Linhas afetadas: {}", cnpjLimpo, rows);
-
-      responseBody.put("mensagem", "Empresa cadastrada com sucesso.");
-      responseBody.put("linhasAfetadas", rows);
-
-      return ResponseEntity.status(HttpStatus.CREATED).body(responseBody);
 
     } catch (Exception e) {
       logger.error("Erro inesperado ao tentar cadastrar CNPJ {}: {}", cnpjLimpo, e.getMessage(), e);

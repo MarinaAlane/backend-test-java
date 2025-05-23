@@ -115,20 +115,7 @@ public class EmpresaService {
     String cnpjLimpo = limparCnpj(empresaDto.cnpj);
 
     verificaValidadeCnpj(cnpjLimpo);
-
-    if (empresaDto.telefone.length() != 11) {
-      logger.warn("Telefone inválido: {}", empresaDto.telefone);
-
-      Map<String, Object> errorBody = new HashMap<>();
-      errorBody.put("erro", "Telefone inválido.");
-    }
-
-    if (verificaEmpresaCadastrada(cnpjLimpo)) {
-      logger.warn("CNPJ {} já cadastrado", cnpjLimpo);
-
-      Map<String, Object> errorBody = new HashMap<>();
-      errorBody.put("erro", "CNPJ já cadastrado.");
-    }
+    // TODO: Validar os dados
 
     String sql = "INSERT INTO empresas (nome, cnpj, endereco, telefone) VALUES (?, ?, ?, ?)";
     int rows = jdbcTemplate.update(sql, empresaDto.nome, cnpjLimpo, empresaDto.endereco, empresaDto.telefone);
@@ -136,14 +123,7 @@ public class EmpresaService {
     logger.info("Empresa com CNPJ {} cadastrada com sucesso. Linhas afetadas: {}", cnpjLimpo, rows);
 
     Map<String, Object> resultado = new HashMap<>();
-    resultado.put("mensagem", "Empresa cadastrada com sucesso.");
-    resultado.put("linhasAfetadas", rows);
 
-    resultado.put("empresa", Map.of(
-        "nome", empresaDto.nome,
-        "cnpj", formatarCnpj(cnpjLimpo),
-        "endereco", empresaDto.endereco,
-        "telefone", empresaDto.telefone));
     return resultado;
   }
 
