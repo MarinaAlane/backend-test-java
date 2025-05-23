@@ -29,7 +29,7 @@ public class EmpresaService {
     return count != null && count > 0;
   }
 
-  private String verificaCnpj(String cnpj) {
+  private String verificaValidadeCnpj(String cnpj) {
     if (cnpj.length() != 14) {
       logger.warn("CNPJ fornecido é nulo ou inválido para limpeza.");
 
@@ -41,11 +41,11 @@ public class EmpresaService {
     return cnpj;
   }
 
-  private String formatarCnpj(String cnpj) {
+  public String formatarCnpj(String cnpj) {
     return cnpj.replaceAll("(\\d{2})(\\d{3})(\\d{3})(\\d{4})(\\d{2})", "$1.$2.$3/$4-$5");
   }
 
-  private String limparCnpj(String cnpj) {
+  public String limparCnpj(String cnpj) {
     return cnpj.replaceAll("[^0-9]", "");
   }
 
@@ -114,7 +114,7 @@ public class EmpresaService {
   public Map<String, Object> criarEmpresa(EmpresaDTO empresaDto) throws Exception {
     String cnpjLimpo = limparCnpj(empresaDto.cnpj);
 
-    verificaCnpj(cnpjLimpo);
+    verificaValidadeCnpj(cnpjLimpo);
 
     if (empresaDto.telefone.length() != 11) {
       logger.warn("Telefone inválido: {}", empresaDto.telefone);
@@ -158,7 +158,7 @@ public class EmpresaService {
   public Map<String, Object> EditarEmpresa(String cnpjPath, EmpresaDTO empresaDto) throws Exception {
     String cnpjLimpoPath = limparCnpj(cnpjPath);
 
-    verificaCnpj(cnpjLimpoPath);
+    verificaValidadeCnpj(cnpjLimpoPath);
 
     if (!verificaEmpresaCadastrada(cnpjLimpoPath)) {
 

@@ -51,10 +51,6 @@ public class EmpresaController {
     return count != null && count > 0;
   }
 
-  private String formatarCnpj(String cnpj) {
-    return cnpj.replaceAll("(\\d{2})(\\d{3})(\\d{3})(\\d{4})(\\d{2})", "$1.$2.$3/$4-$5");
-  }
-
   @Operation(summary = "Listar todas as empresas")
   @ApiResponse(responseCode = "200", description = "Lista de empresas cadastradas", content = @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(example = """
         {
@@ -97,7 +93,7 @@ public class EmpresaController {
     String cnpjLimpo;
 
     try {
-      cnpjLimpo = cnpj.replaceAll("[^0-9]", "");
+      cnpjLimpo = empresaService.limparCnpj(cnpj);
 
     } catch (NullPointerException e) {
       logger.warn("CNPJ fornecido é nulo ou inválido para limpeza.");
@@ -123,7 +119,7 @@ public class EmpresaController {
 
       Object empresa = empresaEncontrada.get("cnpj");
 
-      String cnpjFormatado = formatarCnpj((String) empresa);
+      String cnpjFormatado = empresaService.formatarCnpj((String) empresa);
 
       empresaEncontrada.put("cnpj", cnpjFormatado);
 
